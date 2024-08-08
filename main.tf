@@ -4,13 +4,13 @@ terraform {
   ## YOU WILL UNCOMMENT THIS CODE THEN RERUN TERRAFORM INIT
   ## TO SWITCH FROM LOCAL BACKEND TO REMOTE AWS BACKEND
   #############################################################
-  backend "s3" {
-  bucket         = var.bucket_name
-  key            = var.key_name
-  region         = var.region_name
-  dynamodb_table = var.dynamodb_table_name
-  encrypt        = true
-}
+#   backend "s3" {
+#   bucket         = var.bucket_name
+#   key            = var.key_name
+#   region         = var.region_name
+#   dynamodb_table = var.dynamodb_table_name
+#   encrypt        = true
+# }
 
 
 
@@ -32,31 +32,31 @@ resource "aws_s3_bucket" "terraform_state" {
   force_destroy = true
 }
 
-resource "aws_s3_bucket_versioning" "terraform_bucket_versioning" {
-  bucket = aws_s3_bucket.terraform_state.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
+# resource "aws_s3_bucket_versioning" "terraform_bucket_versioning" {
+#   bucket = aws_s3_bucket.terraform_state.id
+#   versioning_configuration {
+#     status = "Enabled"
+#   }
+# }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_crypto_conf" {
-  bucket        = aws_s3_bucket.terraform_state.bucket 
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
+# resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_crypto_conf" {
+#   bucket        = aws_s3_bucket.terraform_state.bucket 
+#   rule {
+#     apply_server_side_encryption_by_default {
+#       sse_algorithm = "AES256"
+#     }
+#   }
+# }
 
-resource "aws_dynamodb_table" "terraform_locks" {
-  name         = var.dynamo_table_name
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-}
+# resource "aws_dynamodb_table" "terraform_locks" {
+#   name         = var.dynamo_table_name
+#   billing_mode = "PAY_PER_REQUEST"
+#   hash_key     = "LockID"
+#   attribute {
+#     name = "LockID"
+#     type = "S"
+#   }
+# }
 
 
 
@@ -98,40 +98,24 @@ resource "aws_route_table" "public_rt" {
   }
 }
 
-/*Public Subnet 1*/
-resource "aws_subnet" "public_subnet_1" {
+/*Public Subnet X2*/
+resource "aws_subnet" "public_subnet" {
+  count = 2
   vpc_id     = aws_vpc.vpc.id
-  cidr_block = "10.0.1.0/24"
-  availability_zone = "us-east-1a"
+  cidr_block = "10.0.${count.index + 1}.0/24"
+  availability_zone = element(["us-east-1a", "us-east-1b"], count.index)
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "Public-Subnet-1"
+    Name = "Public-Subnet-${count.index + 1}"
   }
 }
 
-/*Public Subnet 2*/
-resource "aws_subnet" "public_subnet_2" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = "10.0.2.0/24"
-  availability_zone = "us-east-1b"
-  map_public_ip_on_launch = true
 
-
-  tags = {
-    Name = "Public-Subnet-2"
-  } 
-}
-
-/*Public Subnet 1 Route Table Association*/
-resource "aws_route_table_association" "rta_public_subnet_1" {
-  subnet_id = aws_subnet.public_subnet_1.id
-  route_table_id = aws_route_table.public_rt.id
-}
-
-/*Public Subnet 2 Route Table Association*/
-resource "aws_route_table_association" "rta_public_subnet_2" {
-  subnet_id = aws_subnet.public_subnet_2.id
+/*Public Subnet X2 Route Table Association*/
+resource "aws_route_table_association" "rta_public_subnet" {
+  count = 2
+  subnet_id = aws_subnet.public_subnet[count.index].id
   route_table_id = aws_route_table.public_rt.id
 }
 
@@ -147,73 +131,24 @@ resource "aws_route_table" "private_rt" {
   }
 }
 
-/*Private Subnet 1*/
-resource "aws_subnet" "private_subnet_1" {
+/*Private Subnet X4*/
+resource "aws_subnet" "private_subnet" {
+  count = 4
   vpc_id     = aws_vpc.vpc.id
-  cidr_block = "10.0.3.0/24"
-  availability_zone = "us-east-1a"
+  cidr_block = "10.0.${count.index + 3}.0/24"
+  availability_zone = element(["us-east-1a", "us-east-1b"], count.index)
 
   tags = {
-    Name = "Private-Subnet-1"
+    Name = "Private-Subnet-${count.index + 1}"
   }
 }
 
-/*Private Subnet 2*/
-resource "aws_subnet" "private_subnet_2" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = "10.0.4.0/24"
-  availability_zone = "us-east-1b"
 
-
-  tags = {
-    Name = "Private-Subnet-2"
-  } 
-}
-
-/*Private Subnet 3*/
-resource "aws_subnet" "private_subnet_3" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = "10.0.5.0/24"
-  availability_zone = "us-east-1a"
-
-
-  tags = {
-    Name = "Private-Subnet-3"
-  } 
-}
-
-/*Private Subnet 4*/
-resource "aws_subnet" "private_subnet_4" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = "10.0.6.0/24"
-  availability_zone = "us-east-1b"
-
-
-  tags = {
-    Name = "Private-Subnet-4"
-  } 
-}
-
-/*Private Subnet 1 Route Table Association*/
-resource "aws_route_table_association" "rta_private_subnet_1" {
-  subnet_id = aws_subnet.private_subnet_1.id
+/*Private Subnet X4 Route Table Association*/
+resource "aws_route_table_association" "rta_private_subnet" {
+  count          = 4
+  subnet_id      = aws_subnet.private_subnet[count.index].id
   route_table_id = aws_route_table.private_rt.id
 }
 
-/*Private Subnet 2 Route Table Association*/
-resource "aws_route_table_association" "rta_private_subnet_2" {
-  subnet_id = aws_subnet.private_subnet_2.id
-  route_table_id = aws_route_table.private_rt.id
-}
 
-/*Private Subnet 3 Route Table Association*/
-resource "aws_route_table_association" "rta_private_subnet_3" {
-  subnet_id = aws_subnet.private_subnet_3.id
-  route_table_id = aws_route_table.private_rt.id
-}
-
-/*Private Subnet 4 Route Table Association*/
-resource "aws_route_table_association" "rta_private_subnet_4" {
-  subnet_id = aws_subnet.private_subnet_4.id
-  route_table_id = aws_route_table.private_rt.id
-}
