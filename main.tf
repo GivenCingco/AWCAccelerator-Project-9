@@ -4,14 +4,13 @@ terraform {
   ## YOU WILL UNCOMMENT THIS CODE THEN RERUN TERRAFORM INIT
   ## TO SWITCH FROM LOCAL BACKEND TO REMOTE AWS BACKEND
   #############################################################
-#   backend "s3" {
-#   bucket         = var.bucket_name
-#   key            = var.key_name
-#   region         = var.region_name
-#   dynamodb_table = var.dynamodb_table_name
-#   encrypt        = true
-# }
-
+  backend "s3" {
+    bucket         = var.bucket_name
+    key            = var.key
+    region         = "us-east-1"
+    dynamodb_table = var.dynamo_table_name
+    encrypt        = true
+  }
 
 
   required_providers {
@@ -26,40 +25,6 @@ provider "aws" {
   region = "us-east-1"
   profile = var.profile
 }
-
-resource "aws_s3_bucket" "terraform_state" {
-  bucket        = var.bucket_name 
-  force_destroy = true
-}
-
-# resource "aws_s3_bucket_versioning" "terraform_bucket_versioning" {
-#   bucket = aws_s3_bucket.terraform_state.id
-#   versioning_configuration {
-#     status = "Enabled"
-#   }
-# }
-
-# resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_crypto_conf" {
-#   bucket        = aws_s3_bucket.terraform_state.bucket 
-#   rule {
-#     apply_server_side_encryption_by_default {
-#       sse_algorithm = "AES256"
-#     }
-#   }
-# }
-
-# resource "aws_dynamodb_table" "terraform_locks" {
-#   name         = var.dynamo_table_name
-#   billing_mode = "PAY_PER_REQUEST"
-#   hash_key     = "LockID"
-#   attribute {
-#     name = "LockID"
-#     type = "S"
-#   }
-# }
-
-
-
 
 
 /*Resource Block for VPC      */
